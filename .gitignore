@@ -1,5 +1,6 @@
 /build/
 /.mygo/
+/.update-keys/
 mygo_windows_*.syso
 *.db
 *.db-wal

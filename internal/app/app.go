@@ -35,6 +35,7 @@ type app struct {
 	pal         palette
 
 	settings settings
+	updates  bool        // the update plugin is registered
 	quitting atomic.Bool // read by goroutines on their way back to the main thread
 	done     chan struct{}
 	stopOnce sync.Once
@@ -81,6 +82,8 @@ type app struct {
 // Run runs the app until it quits.
 func Run() error {
 	a := &app{fetcher: feed.NewFetcher(), done: make(chan struct{}), collapsed: map[int64]bool{}, selected: -1}
+	// Before App.Run: the plugin schedules its checks once the app is ready.
+	a.useUpdater()
 	mygo.App.WhenReady(func() {
 		ctx := context.Background()
 		path, err := dataPath("zrss.db")

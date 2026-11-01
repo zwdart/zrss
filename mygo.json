@@ -7,6 +7,10 @@
   "icon": "resources/icon.png",
   "copyright": "© 2026 zrss contributors",
   "publisher": "zrss contributors",
+  "updates": {
+    "publicKey": "GRjAIRowOqQCLVbHg+FY6vC6tNEObzF3cRi9wFaCDIY=",
+    "github": "zwdart/zrss"
+  },
   "macos": {
     "minimumSystemVersion": "12.0"
   },

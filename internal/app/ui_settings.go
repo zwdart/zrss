@@ -212,6 +212,32 @@ func (a *app) settingsView(c *ui.Context) {
 			})
 		})
 
+		if a.updates {
+			group("更新", func() {
+				desc := "每天检查一次是否有新版本"
+				if t := lastUpdateCheck(); !t.IsZero() {
+					desc += "；上次检查：" + relativeTime(t)
+				}
+				row("自动检查更新", desc, func() {
+					on := updateChecks()
+					if ui.Switch(c.Key("update-checks"), &on).Label("自动检查更新").Changed() {
+						setUpdateChecks(on)
+					}
+				})
+				row("自动下载并安装", "在后台下载新版本，下次打开时生效", func() {
+					on := updateDownloads()
+					if ui.Switch(c.Key("update-downloads"), &on).Label("自动下载并安装").Disabled(!updateChecks()).Changed() {
+						setUpdateDownloads(on)
+					}
+				})
+				row("检查更新", "当前版本 "+mygo.App.Version(), func() {
+					if ui.Button(c.Key("check-updates"), "检查更新").Clicked() {
+						checkForUpdates()
+					}
+				})
+			})
+		}
+
 		group("关于", func() {
 			row("zrss", "一个安静、快速的桌面 RSS 阅读器，支持 RSS 1.0、RSS 2.0 与 Atom。", func() {
 				ui.Text(c, "版本 "+mygo.App.Version()).FontSize(12).TextColor(p.faint)

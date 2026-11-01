@@ -1,0 +1,3 @@
+# The release scripts are POSIX sh and run in Git Bash on Windows: keep them
+# LF so `sh scripts/...` works after a checkout with core.autocrlf=true.
+*.sh text eol=lf

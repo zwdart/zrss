@@ -2,7 +2,7 @@
 
 一个本地优先的桌面 RSS 阅读器，用 Go 与 [MyGo](https://github.com/egoist/mygo) 的原生 UI 编写。没有 WebView、没有账号、没有云端同步：订阅、文章、已读状态和设置都在本机的一个 SQLite 文件里。
 
-产品与交互规则见 [`docs/功能设计.md`](docs/功能设计.md)，代码分层与数据流见 [`docs/代码架构设计.md`](docs/代码架构设计.md)。
+产品与交互规则见 [`docs/功能设计.md`](docs/功能设计.md)，代码分层与数据流见 [`docs/代码架构设计.md`](docs/代码架构设计.md)，版本检查、签名与发版流程见 [`docs/版本更新设计.md`](docs/版本更新设计.md)。
 
 ## 功能
 
@@ -21,6 +21,7 @@
 - 浅色 / 深色 / 跟随系统，五种强调色，可调正文字号。
 - Windows / Linux 通知区域与 macOS 菜单栏图标：刷新、全部标为已读、设置、退出；关闭窗口可留在托盘继续刷新。
 - 定时刷新（手动 / 15 分钟到 6 小时）、新文章桌面通知、后台刷新失败提示。
+- 应用内检查更新：启动后检查 GitHub Releases，之后每天一次；更新包经过 Ed25519 签名校验，可自动下载并在下次启动时生效。
 - 设置、搜索历史、上次查看的范围与窗口状态都会恢复。
 
 ## 快捷键
@@ -52,6 +53,21 @@ go test ./...        # 运行测试
 go vet ./...         # 静态检查
 ```
 
+带更新清单的本地构建使用脚本（会读取 `.update-keys/mygo-update.key`）：
+
+```sh
+sh scripts/keygen.sh   # 第一次：生成更新签名密钥
+sh scripts/build.sh    # 构建并生成 update-<platform>.json
+```
+
+脚本是 POSIX `sh`，Windows 自带 PowerShell 不能直接运行，需要用 Git for Windows 的 Git Bash，或 WSL：
+
+```powershell
+& 'C:\Program Files\Git\bin\bash.exe' -lc 'sh scripts/build.sh'
+```
+
+在 Git Bash 里也可以直接 `sh scripts/build.sh`。
+
 `go tool mygo build` 默认只构建当前平台。发布工作流会分别构建 `darwin/arm64`、`darwin/amd64`、`windows/amd64`、`windows/arm64`、`linux/amd64` 与 `linux/arm64`。
 
 应用图标与托盘图标由 `tools/gentray` 生成：
@@ -79,10 +95,19 @@ zrss 只在你刷新订阅、打开文章图片或加载订阅图标时访问网
 `.github/workflows/release.yml` 在推送 `v*` 标签时：
 
 1. 检查标签与 `mygo.json` 的 `version` 一致；
-2. 创建草稿 Release；
-3. 在三个系统上并行打包，上传 macOS 的 `.dmg`、Windows 的安装器和 Linux 的 `.deb` / `.tar.gz`；
-4. 把所有文件附到草稿 Release，人工检查后再发布。
+2. 从 `CHANGELOG.md` 取本版本说明，创建草稿 Release；
+3. 在三个系统上并行打包；
+4. 用 `MYGO_UPDATER_PRIVATE_KEY` 签名更新包并生成 `update-<platform>.json`；
+5. 通过 `mygo build -upload` 把安装包、更新包与清单附到草稿 Release，人工检查后发布并标记 latest。
+
+发版流程、脚本参数与故障排查见 [`docs/版本更新设计.md`](docs/版本更新设计.md)。快速命令：
+
+```sh
+sh scripts/release.sh            # 检查 + 带签名构建
+sh scripts/release.sh --tag      # 打标签并触发 CI
+sh scripts/release.sh --publish  # CI 完成后发布并验证更新源
+```
+
+Windows 上通过 Git Bash 执行，例如 `& 'C:\Program Files\Git\bin\bash.exe' -lc 'sh scripts/release.sh --tag'`。
 
 默认构建是未签名的：macOS 应用会被 Gatekeeper 拦截，Windows 会显示 SmartScreen 提示。正式分发前，在 `mygo.json` 中配置 `macos.signingIdentity`、`macos.notarize` 与 `windows.certificate`，并按 [MyGo 的发布文档](https://github.com/egoist/mygo/blob/main/docs/distribution.md) 在 CI 中提供证书和公证凭据。
-
-项目暂未配置自动更新；如需更新功能，在 `mygo.json` 中添加 `updates` 并给发布工作流提供 `MYGO_UPDATER_PRIVATE_KEY`。
