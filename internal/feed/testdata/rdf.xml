@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns="http://purl.org/rss/1.0/"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel rdf:about="https://example.org/">
+    <title>RDF Example</title>
+    <link>https://example.org/</link>
+    <description>An RDF feed &amp; channel.</description>
+    <language>en</language>
+  </channel>
+  <image rdf:about="https://example.org/logo.png">
+    <title>Logo</title>
+    <url>https://example.org/logo.png</url>
+    <link>https://example.org/</link>
+  </image>
+  <item rdf:about="https://example.org/items/1">
+    <title>RDF Item One</title>
+    <link>https://example.org/items/1</link>
+    <description><![CDATA[<p>RDF summary.</p>]]></description>
+    <content:encoded><![CDATA[<p>RDF <em>full</em> content.</p>]]></content:encoded>
+    <dc:date>2006-01-04T05:06:07Z</dc:date>
+    <dc:creator>Bob</dc:creator>
+  </item>
+  <item rdf:about="items/2">
+    <title>RDF Item Two</title>
+    <description>No link, uses about.</description>
+    <dc:date>2006-01-05</dc:date>
+  </item>
+</rdf:RDF>

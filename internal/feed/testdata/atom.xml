@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:media="http://search.yahoo.com/mrss/"
+      xml:lang="en">
+  <title type="html">Tech &amp; &lt;b&gt;Stuff&lt;/b&gt;</title>
+  <subtitle type="text">News from the lab</subtitle>
+  <id>tag:example.com,2024:feed</id>
+  <link rel="self" type="application/atom+xml" href="/atom.xml"/>
+  <link rel="alternate" type="text/html" href="/blog/"/>
+  <link rel="alternate" type="application/atom+xml" href="/wrong.xml"/>
+  <icon>/favicon.ico</icon>
+  <logo>/logo.png</logo>
+  <author>
+    <name>Feed Author</name>
+    <email>feed@example.com</email>
+  </author>
+  <entry>
+    <id>urn:uuid:1</id>
+    <title type="html">Post &lt;b&gt;One&lt;/b&gt;</title>
+    <link rel="self" href="/entry/1"/>
+    <link rel="alternate" type="text/html" href="posts/one"/>
+    <summary type="html">&lt;p&gt;Summary &amp; more&lt;/p&gt;</summary>
+    <content type="xhtml">
+      <div xmlns="http://www.w3.org/1999/xhtml"><p>Full <strong>content</strong>.</p></div>
+    </content>
+    <published>2024-01-02T03:04:05Z</published>
+    <updated>2024-02-03T04:05:06Z</updated>
+    <author><name>Alice</name></author>
+    <media:thumbnail url="/thumbs/1.jpg"/>
+  </entry>
+  <entry>
+    <title type="text">Plain entry</title>
+    <link rel="alternate" href="/posts/two"/>
+    <summary type="html">Fallback &lt;em&gt;summary&lt;/em&gt;.</summary>
+    <content type="text">5 &lt; 6 &amp; true</content>
+    <updated>2024-03-04T05:06:07+02:00</updated>
+    <media:content url="files/audio.mp3" type="audio/mpeg"/>
+    <link rel="enclosure" href="files/podcast.mp3" type="audio/mpeg"/>
+  </entry>
+  <entry>
+    <title>Media only</title>
+    <link href="https://example.com/posts/three"/>
+    <id>tag:example.com,2024:3</id>
+    <content type="text">See image.</content>
+    <media:content url="//cdn.example.com/pic.jpg" type="image/jpeg"/>
+    <media:thumbnail url="/thumbs/3.jpg"/>
+  </entry>
+</feed>

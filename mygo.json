@@ -1,0 +1,19 @@
+{
+  "name": "zrss",
+  "identifier": "xin.dart.zrss",
+  "slug": "zrss",
+  "version": "0.1.0",
+  "out": "build",
+  "icon": "resources/icon.png",
+  "copyright": "© 2026 zrss contributors",
+  "publisher": "zrss contributors",
+  "macos": {
+    "minimumSystemVersion": "12.0"
+  },
+  "linux": {
+    "comment": "本地优先的桌面 RSS 阅读器",
+    "categories": ["Network", "News"],
+    "command": "zrss",
+    "webview": false
+  }
+}

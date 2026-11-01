@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title><![CDATA[<b>Example</b> &amp; Friends]]></title>
+    <link>/news</link>
+    <description><![CDATA[News &amp; notes from the <b>team</b>]]></description>
+    <language>en-US</language>
+    <managingEditor>editor@example.com (Ed Itor)</managingEditor>
+    <image>
+      <url>/assets/logo.png</url>
+      <title>Example</title>
+      <link>/news</link>
+    </image>
+    <itunes:image href="//cdn.example.com/itunes.jpg"/>
+    <item>
+      <title><![CDATA[First <em>Post</em>]]></title>
+      <link>/posts/1</link>
+      <description><![CDATA[<p>Short &amp; sweet summary.</p>]]></description>
+      <content:encoded><![CDATA[<p>Full <strong>body</strong>.</p><img src="/img/1.jpg">]]></content:encoded>
+      <pubDate>Mon, 02 Jan 2006 15:04:05 -0700</pubDate>
+      <author>author@example.com (Author Name)</author>
+      <dc:creator>Alice</dc:creator>
+      <guid isPermaLink="false">post-1</guid>
+      <enclosure url="/audio/1.mp3" type="audio/mpeg" length="123"/>
+      <media:thumbnail url="//img.example.com/thumb1.jpg"/>
+    </item>
+    <item>
+      <title>Second &amp; Third</title>
+      <link>posts/two</link>
+      <description>Plain description with no full content.</description>
+      <pubDate>2006-01-03T04:05:06Z</pubDate>
+      <guid>https://example.com/?p=2</guid>
+      <media:content url="https://cdn.example.com/media/two.jpg" type="image/jpeg"/>
+    </item>
+    <item>
+      <title>Unsafe</title>
+      <link>javascript:alert(1)</link>
+      <description>Should be dropped.</description>
+    </item>
+    <item>
+      <title>Old News</title>
+      <link>https://example.com/old</link>
+      <pubDate>2 January 2006</pubDate>
+      <guid>old-news</guid>
+    </item>
+  </channel>
+</rss>

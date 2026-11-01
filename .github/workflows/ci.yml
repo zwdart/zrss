@@ -1,0 +1,49 @@
+# Every push and pull request runs the tests on the three systems, and
+# packages the Linux app to check that a release build still works.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test ./...
+      - name: Build
+        run: go build ./...
+
+  package:
+    name: Package the Linux app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Package
+        run: go tool mygo build -platform linux/amd64
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-amd64
+          if-no-files-found: error
+          path: |
+            build/*/*.deb
+            build/*/*.tar.gz
