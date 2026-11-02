@@ -2,7 +2,7 @@
   "name": "zrss",
   "identifier": "xin.dart.zrss",
   "slug": "zrss",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "out": "build",
   "icon": "resources/icon.png",
   "copyright": "© 2026 zrss contributors",
