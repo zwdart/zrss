@@ -17,6 +17,7 @@ import (
 type settings struct {
 	Appearance    string // system, light or dark
 	Accent        string // red, orange, green, blue or purple
+	Layout        string // which panes the main window shows
 	RefreshMin    int    // minutes between refreshes, 0 for manual
 	MarkRead      bool   // mark an article read as it is opened
 	NotifyNew     bool   // notify when a refresh finds new articles
@@ -28,10 +29,19 @@ type settings struct {
 	lastRefreshAt int64  // when a refresh last finished, for the scheduler
 }
 
+// The layouts the main window offers: all three panes, the list and the
+// article, or the article alone.
+const (
+	layoutAll    = "all"
+	layoutSplit  = "split"
+	layoutReader = "reader"
+)
+
 func defaultSettings() settings {
 	return settings{
 		Appearance:   "system",
 		Accent:       "red",
+		Layout:       layoutAll,
 		RefreshMin:   30,
 		MarkRead:     true,
 		NotifyNew:    true,
@@ -56,6 +66,10 @@ func loadSettings(ctx context.Context, s *storage.Store) settings {
 		if _, ok := accentColor(v, true); ok {
 			out.Accent = v
 		}
+	}
+	switch v := all["layout"]; v {
+	case layoutAll, layoutSplit, layoutReader:
+		out.Layout = v
 	}
 	if v, err := strconv.Atoi(all["refreshMin"]); err == nil && v >= 0 {
 		out.RefreshMin = v
@@ -92,6 +106,7 @@ func saveSettings(ctx context.Context, s *storage.Store, v settings) error {
 	pairs := [][2]string{
 		{"appearance", v.Appearance},
 		{"accent", v.Accent},
+		{"layout", v.Layout},
 		{"refreshMin", strconv.Itoa(v.RefreshMin)},
 		{"markRead", strconv.FormatBool(v.MarkRead)},
 		{"notifyNew", strconv.FormatBool(v.NotifyNew)},

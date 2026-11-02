@@ -209,6 +209,7 @@ func (a *app) reloadArticles(ctx context.Context) {
 	if a.store == nil {
 		return
 	}
+	a.pendingMove = 0
 	oldID := int64(0)
 	if a.hasCurrent {
 		oldID = a.current.ID
@@ -263,6 +264,7 @@ func (a *app) loadMore(ctx context.Context) {
 		if err != nil {
 			a.post(func() {
 				a.loading = false
+				a.pendingMove = 0
 				a.say("无法加载更多文章")
 			})
 			return
@@ -272,8 +274,18 @@ func (a *app) loadMore(ctx context.Context) {
 			if a.scope != scope {
 				return
 			}
-			a.articles = append(a.articles, rows...)
-			a.hasMore = len(a.articles) < a.total
+			if len(rows) == 0 {
+				a.hasMore = false
+			} else {
+				a.articles = append(a.articles, rows...)
+				a.hasMore = len(a.articles) < a.total
+			}
+			// A reader step waits at the end of the loaded rows: take it
+			// now that the next page has arrived.
+			if step := a.pendingMove; step != 0 && len(rows) > 0 {
+				a.pendingMove = 0
+				a.moveSelection(ctx, step)
+			}
 		})
 	}()
 }
@@ -335,14 +347,23 @@ func (a *app) moveSelection(ctx context.Context, delta int) {
 		}
 	}
 	if next < 0 {
+		a.pendingMove = 0
 		return
 	}
 	if next >= len(a.articles) {
-		if a.hasMore && !a.loading {
-			a.loadMore(ctx)
+		if a.hasMore {
+			// The step waits for the next page, whether it is already on its
+			// way or starts now.
+			a.pendingMove = delta
+			if !a.loading {
+				a.loadMore(ctx)
+			}
+		} else {
+			a.pendingMove = 0
 		}
 		return
 	}
+	a.pendingMove = 0
 	a.selectArticleAt(ctx, next)
 	a.listState.ScrollIntoView(next)
 }

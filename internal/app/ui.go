@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 
@@ -30,12 +31,19 @@ func (a *app) view(c *ui.Context) {
 
 	a.shortcuts(c)
 
-	ui.Row(c).Fill().AlignItems(ui.Stretch).Children(func() {
-		a.sidebarPane(c)
-		ui.Box(c).Width(1).FillHeight().Background(p.hairline)
-		a.listPane(c)
-		ui.Box(c).Width(1).FillHeight().Background(p.hairline)
-		a.readerPane(c)
+	ui.Column(c).Fill().Children(func() {
+		a.titleBar(c)
+		ui.Row(c).Grow(1).AlignItems(ui.Stretch).Children(func() {
+			if a.settings.Layout != layoutReader {
+				if a.settings.Layout == layoutAll {
+					a.sidebarPane(c)
+					ui.Box(c).Width(1).FillHeight().Background(p.hairline)
+				}
+				a.listPane(c)
+				ui.Box(c).Width(1).FillHeight().Background(p.hairline)
+			}
+			a.readerPane(c)
+		})
 	})
 
 	a.addDialogView(c)
@@ -92,20 +100,132 @@ func (a *app) openAdd(folderID int64) {
 	a.add.folderID = folderID
 }
 
-// sidebarPane is the subscriptions column.
+// titleBarHeight is the height of the reader's own title bar, which holds
+// the brand, the menus and the window controls.
+const titleBarHeight = 40
 
+// titleBar is the strip along the top of the window: the brand and the
+// menus at the left, the window controls at the right, and the room between
+// them that drags the window.
+func (a *app) titleBar(c *ui.Context) {
+	ui.Row(c).Height(titleBarHeight).FillWidth().AlignItems(ui.Center).DragWindow().
+		Background(a.pal.side).BorderWidth(0, 0, 1, 0).BorderColor(a.pal.hairline).
+		PaddingStart(7).PaddingEnd(7).Gap(2).Children(func() {
+		a.titleBrand(c)
+		a.titleMenuButton(c, "menu-file", "文件", a.menuFile)
+		a.titleMenuButton(c, "menu-edit", "编辑", a.menuEdit)
+		a.titleMenuButton(c, "menu-view", "显示", a.menuView)
+		a.titleMenuButton(c, "menu-window", "窗口", a.menuWindow)
+		ui.Spacer(c)
+		a.windowControls(c)
+	})
+}
+
+// titleBrand is the icon and name at the left of the title bar. Its menu
+// holds what the app menu holds: settings, updates and quitting.
+func (a *app) titleBrand(c *ui.Context) {
+	p := a.pal
+	b := ui.ButtonBase(c.Key("menu-app")).Height(28).PaddingX(8).Gap(7).Radius(7).
+		AlignItems(ui.Center).Label("zrss").FocusRing(false)
+	bg := ui.Transparent
+	if b.Hovered() {
+		bg = p.hover
+	}
+	b.Background(b.AnimateColor("bg", bg, ui.Animation{Duration: 110 * time.Millisecond}))
+	b.Children(func() {
+		ui.Icon(c, iconRSS).Size(17, 17).TextColor(p.accent)
+		ui.Text(c, "zrss").FontSize(13.5).FontWeight(700).TextColor(p.text)
+	})
+	a.titleMenuPopup(b, a.menuApp)
+}
+
+// titleMenuButton is a menu of the title bar's menu bar.
+func (a *app) titleMenuButton(c *ui.Context, key, label string, menu *mygo.Menu) {
+	p := a.pal
+	b := ui.ButtonBase(c.Key(key)).Height(28).PaddingX(9).Radius(7).Label(label).FocusRing(false)
+	bg := ui.Transparent
+	if b.Hovered() {
+		bg = p.hover
+	}
+	b.Background(b.AnimateColor("bg", bg, ui.Animation{Duration: 110 * time.Millisecond}))
+	b.Children(func() {
+		ui.Text(c, label).FontSize(12.5).FontWeight(500).TextColor(p.text)
+	})
+	a.titleMenuPopup(b, menu)
+}
+
+// titleMenuPopup shows the native menu below the button, with the roles,
+// shortcuts and submenus the menu bar would have.
+func (a *app) titleMenuPopup(b ui.Element, menu *mygo.Menu) {
+	if !b.Clicked() || a.win == nil || menu == nil {
+		return
+	}
+	if r := b.Bounds(); r.W > 0 {
+		menu.PopupAt(a.win, int(r.X), int(r.Y+r.H+4))
+	}
+}
+
+// windowControls draws minimize, maximize or restore, and close at the
+// right of the title bar, in the colors of the theme.
+func (a *app) windowControls(c *ui.Context) {
+	maximized := a.win != nil && a.win.IsMaximized()
+	ui.Row(c).Gap(2).AlignItems(ui.Center).Children(func() {
+		if a.windowButton(c, "window-minimize", iconMinimize, 12, "最小化", false).Clicked() {
+			if a.win != nil {
+				a.win.Minimize()
+			}
+		}
+		icon, label := iconMaximize, "最大化"
+		if maximized {
+			icon, label = iconRestore, "还原"
+		}
+		max := a.windowButton(c, "window-maximize", icon, 12, label, false)
+		if !maximized {
+			// Holding the pointer over it shows Windows 11's snap layouts.
+			max = max.MaximizeButton()
+		}
+		if max.Clicked() {
+			if a.win != nil {
+				a.win.ToggleMaximize()
+			}
+		}
+		if a.windowButton(c, "window-close", iconX, 12, "关闭", true).Clicked() {
+			if a.win != nil {
+				a.win.Close()
+			}
+		}
+	})
+}
+
+// windowButton is a window control: a quiet glyph under the pointer, or a
+// red one for close, matching the icon buttons around it.
+func (a *app) windowButton(c *ui.Context, key string, icon *ui.SVG, size float32, label string, danger bool) ui.Element {
+	b := ui.ButtonBase(c.Key(key)).Size(30, 30).Center().Radius(8).Label(label).Tooltip(label).FocusRing(false)
+	bg := ui.Transparent
+	color := a.pal.muted
+	if b.Hovered() {
+		bg, color = a.pal.hover, a.pal.text
+		if danger {
+			bg, color = ui.Hex("#e5484d"), ui.Hex("#ffffff")
+		}
+	}
+	b.TextColor(color)
+	b.Background(b.AnimateColor("bg", bg, ui.Animation{Duration: 120 * time.Millisecond}))
+	pose := ui.Pose{}
+	if b.Pressed() {
+		pose.Scale = 0.88
+	}
+	b.AnimatePose(pose, ui.Snappy)
+	b.Children(func() {
+		ui.Icon(c, icon).Size(size, size)
+	})
+	return b
+}
+
+// sidebarPane is the subscriptions column.
 func (a *app) sidebarPane(c *ui.Context) {
 	p := a.pal
-	ui.Column(c).Width(sidebarWidth).Shrink(0).FillHeight().Background(p.side).Padding(14, 14, 10, 10).Gap(2).Children(func() {
-		ui.Row(c).Height(34).Gap(9).AlignItems(ui.Center).Children(func() {
-			ui.Icon(c, iconRSS).Size(21, 21).TextColor(p.accent)
-			ui.Text(c, "zrss").FontSize(16).FontWeight(750).TextColor(p.text)
-			ui.Spacer(c)
-			if iconButton(c.Key("refresh"), iconRefresh, 15, p.muted, "刷新订阅").Clicked() {
-				a.refreshAll(true)
-			}
-		})
-
+	ui.Column(c).Width(sidebarWidth).Shrink(0).FillHeight().Background(p.side).Padding(12, 14, 10, 10).Gap(2).Children(func() {
 		a.searchField(c)
 
 		ui.Scroll(c.Key("nav")).Grow(1).Margin(0, -6).Padding(0, 6).Gap(1).Children(func() {
@@ -557,12 +677,21 @@ func (a *app) articleRow(c *ui.Context, i int) {
 
 func (a *app) readerPane(c *ui.Context) {
 	p := a.pal
+	ctx := context.Background()
 	ui.Column(c).Grow(1).Shrink(1).MinWidth(0).FillHeight().Background(p.bg).Children(func() {
 		if !a.hasCurrent {
 			ui.Column(c).Grow(1).Center().Padding(30, 24).Gap(12).Children(func() {
 				ui.Icon(c, iconRSS).Size(42, 42).TextColor(p.faint)
 				ui.Text(c, "选择一篇文章开始阅读").FontSize(14).FontWeight(600).TextColor(p.muted)
 				ui.Text(c, "列表里的文章会显示在这里，图片与链接都留在原处").FontSize(12).TextColor(p.faint)
+				if a.settings.Layout == layoutReader {
+					// With the list hidden, the reader alone must be able to
+					// bring it back.
+					if pillButton(c.Key("show-list"), iconInbox, "显示文章列表", p.accent, p.onAccent).Clicked() {
+						a.settings.Layout = layoutSplit
+						a.changed()
+					}
+				}
 			})
 			return
 		}
@@ -590,6 +719,13 @@ func (a *app) readerPane(c *ui.Context) {
 				}
 				if iconButton(c.Key("reader-open"), iconExternal, 15, p.muted, "打开原网页").Clicked() {
 					a.openOriginal()
+				}
+				ui.Box(c).Width(1).Height(14).Background(p.hairline).Margin(0, 3)
+				if a.readerNavButton(c, "reader-prev", iconChevronLeft, 15, "上一篇 (K)", a.selected > 0).Clicked() {
+					a.moveSelection(ctx, -1)
+				}
+				if a.readerNavButton(c, "reader-next", iconChevron, 15, "下一篇 (J)", a.selected < len(a.articles)-1 || a.hasMore).Clicked() {
+					a.moveSelection(ctx, 1)
 				}
 			})
 			ui.Text(c, art.Title).FontSize(23).FontWeight(750).LineHeight(1.25).TextColor(p.text)
@@ -643,6 +779,16 @@ func (a *app) readerPane(c *ui.Context) {
 			})
 		})
 	})
+}
+
+// readerNavButton is the previous or next article control. At either end of
+// the list it stays in place, faded and unable to move.
+func (a *app) readerNavButton(c *ui.Context, key string, icon *ui.SVG, size float32, label string, enabled bool) ui.Element {
+	b := iconButton(c.Key(key), icon, size, a.pal.muted, label)
+	if !enabled {
+		b.Disabled(true).Opacity(0.3)
+	}
+	return b
 }
 
 func starIcon(on bool) *ui.SVG {

@@ -34,11 +34,19 @@ type app struct {
 	md          markdown.Options
 	pal         palette
 
-	settings settings
-	updates  bool        // the update plugin is registered
-	quitting atomic.Bool // read by goroutines on their way back to the main thread
-	done     chan struct{}
-	stopOnce sync.Once
+	// The menus the title bar opens, and the app menu of macOS.
+	menuApp    *mygo.Menu
+	menuFile   *mygo.Menu
+	menuEdit   *mygo.Menu
+	menuView   *mygo.Menu
+	menuWindow *mygo.Menu
+
+	settings      settings
+	updates       bool        // the update plugin is registered
+	canSelfUpdate bool        // updates can replace the app where it is installed
+	quitting      atomic.Bool // read by goroutines on their way back to the main thread
+	done          chan struct{}
+	stopOnce      sync.Once
 
 	// The sidebar.
 	folders       []storage.Folder
@@ -48,17 +56,18 @@ type app struct {
 	defaultFolder int64
 
 	// The list and the article it shows.
-	scope      storage.Scope
-	scopeTitle string
-	articles   []storage.Article
-	total      int
-	hasMore    bool
-	loading    bool
-	loadErr    string
-	selected   int
-	listState  ui.ListState
-	current    storage.Article
-	hasCurrent bool
+	scope       storage.Scope
+	scopeTitle  string
+	articles    []storage.Article
+	total       int
+	hasMore     bool
+	loading     bool
+	loadErr     string
+	selected    int
+	pendingMove int // a step waiting for the next page of the list
+	listState   ui.ListState
+	current     storage.Article
+	hasCurrent  bool
 
 	// The search field and its history.
 	query       string
@@ -114,14 +123,20 @@ func Run() error {
 		a.reloadArticles(ctx)
 
 		a.win = mygo.NewWindow(mygo.WindowOptions{
-			Title:           mygo.App.Name(),
-			Width:           1240,
-			Height:          800,
-			MinWidth:        980,
-			MinHeight:       620,
-			StateKey:        "main",
-			BackgroundColor: "light-dark(#ffffff, #131315)",
-			Content:         ui.View(a.view),
+			Title:         mygo.App.Name(),
+			Width:         1240,
+			Height:        800,
+			MinWidth:      980,
+			MinHeight:     620,
+			StateKey:      "main",
+			TitleBarStyle: mygo.TitleBarHidden,
+			// The view draws the window controls itself, in the title bar
+			// along the top, and the menu bar stays out of its way.
+			HideWindowButtons: true,
+			AutoHideMenuBar:   true,
+			TitleBarHeight:    titleBarHeight,
+			BackgroundColor:   "light-dark(#ffffff, #131315)",
+			Content:           ui.View(a.view),
 		})
 		a.win.OnClose(a.onClose)
 		a.setMenu()

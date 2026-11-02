@@ -72,7 +72,7 @@ func (a *app) trayMenu() *mygo.Menu {
 		{Label: "检查更新…", Click: func(*mygo.MenuItem, *mygo.Window) {
 			a.showMain()
 			mygo.App.Focus()
-			checkForUpdates()
+			a.checkUpdates()
 		}},
 		mygo.Separator(),
 		{Label: "退出" + name, Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},

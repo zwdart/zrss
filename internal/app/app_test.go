@@ -102,6 +102,56 @@ func TestArticleInputsConvertHTMLAndResolveLinks(t *testing.T) {
 	}
 }
 
+func TestLayoutSettingIsSaved(t *testing.T) {
+	a, ctx := newTestApp(t)
+	if a.settings.Layout != layoutAll {
+		t.Fatalf("default layout = %q, want %q", a.settings.Layout, layoutAll)
+	}
+	for _, layout := range []string{layoutSplit, layoutReader, layoutAll} {
+		a.settings.Layout = layout
+		if err := saveSettings(ctx, a.store, a.settings); err != nil {
+			t.Fatalf("saveSettings(%q): %v", layout, err)
+		}
+		if got, err := a.store.Setting(ctx, "layout", ""); err != nil || got != layout {
+			t.Errorf("saved layout = %q, %v; want %q", got, err, layout)
+		}
+	}
+}
+
+func TestMoveSelectionStopsAtBothEnds(t *testing.T) {
+	a, ctx := newTestApp(t)
+	feedID := addTestFeed(t, a, ctx, "https://example.com/feed", "Example")
+	addTestArticles(t, a, ctx, feedID, "One", "Two", "Three")
+	a.scope = storage.Scope{Kind: storage.ScopeAll}
+	a.reloadSidebar(ctx)
+	a.reloadArticles(ctx)
+	a.selected = -1
+	a.hasCurrent = false
+
+	a.moveSelection(ctx, 1)
+	if !a.hasCurrent || a.selected != 0 {
+		t.Fatalf("first step selected %d (current %v), want 0", a.selected, a.hasCurrent)
+	}
+	a.moveSelection(ctx, 1)
+	a.moveSelection(ctx, 1)
+	if a.selected != 2 {
+		t.Fatalf("stepping past the end selected %d, want 2", a.selected)
+	}
+	a.moveSelection(ctx, 1)
+	if a.selected != 2 {
+		t.Errorf("a step past the last article moved to %d", a.selected)
+	}
+	a.moveSelection(ctx, -1)
+	if a.selected != 1 {
+		t.Fatalf("stepping back selected %d, want 1", a.selected)
+	}
+	a.moveSelection(ctx, -1)
+	a.moveSelection(ctx, -1)
+	if a.selected != 0 {
+		t.Errorf("stepping before the first article selected %d, want 0", a.selected)
+	}
+}
+
 func TestScopeEncodingRoundTrip(t *testing.T) {
 	cases := []struct {
 		scope storage.Scope

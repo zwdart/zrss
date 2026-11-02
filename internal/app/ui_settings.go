@@ -111,6 +111,24 @@ func (a *app) settingsView(c *ui.Context) {
 					a.changed()
 				}
 			})
+			row("界面布局", "主窗口显示订阅、文章列表和文章详情中的哪些栏", func() {
+				layouts := []string{layoutAll, layoutSplit, layoutReader}
+				labels := []string{"三栏", "列表 + 详情", "仅详情"}
+				chosen := labels[0]
+				for i, layout := range layouts {
+					if layout == s.Layout {
+						chosen = labels[i]
+					}
+				}
+				if ui.Select(c.Key("layout"), &chosen, labels).Label("界面布局").Width(150).Changed() {
+					for i, label := range labels {
+						if label == chosen {
+							s.Layout = layouts[i]
+						}
+					}
+					a.changed()
+				}
+			})
 		})
 
 		group("阅读", func() {
@@ -214,6 +232,20 @@ func (a *app) settingsView(c *ui.Context) {
 
 		if a.updates {
 			group("更新", func() {
+				if !a.canSelfUpdate {
+					// A package manager owns the app's files: updating it
+					// there is the only way that leaves its records right.
+					desc := "通过 .deb 等系统包安装的版本需要下载新版安装包，再用 apt 或 dpkg 更新。"
+					if v := mygo.App.Version(); v != "" {
+						desc = "当前版本 " + v + "。" + desc
+					}
+					row("应用内更新不可用", desc, func() {
+						if ui.Button(c.Key("open-releases"), "打开发布页").Clicked() {
+							a.openReleases()
+						}
+					})
+					return
+				}
 				desc := "每天检查一次是否有新版本"
 				if t := lastUpdateCheck(); !t.IsZero() {
 					desc += "；上次检查：" + relativeTime(t)
@@ -232,7 +264,7 @@ func (a *app) settingsView(c *ui.Context) {
 				})
 				row("检查更新", "当前版本 "+mygo.App.Version(), func() {
 					if ui.Button(c.Key("check-updates"), "检查更新").Clicked() {
-						checkForUpdates()
+						a.checkUpdates()
 					}
 				})
 			})
